@@ -96,15 +96,17 @@ type Event interface {
 **Publicado por:** PaymentOrchestrator  
 
 ### 9. PaymentFailed
-**Cuándo:** Pago falla sin debitar  
+**Cuándo:** Pago falla durante el procesamiento del orquestador  
 **Publicado por:** PaymentOrchestrator  
 
 ```json
 {
   "paymentId": "pmt_456",
-  "reason": "WALLET_NOT_FOUND" // o "INSUFFICIENT_FUNDS"
+  "reason": "WALLET_NOT_FOUND"
 }
 ```
+
+**Nota:** Si la validación falla en CreatePaymentService (wallet no existe, fondos insuficientes, currency mismatch), se retorna 400 Bad Request directamente sin crear el payment ni publicar eventos.
 
 ### 10. ExternalPaymentTimeout
 **Definido pero no implementado en mock**

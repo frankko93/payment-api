@@ -8,14 +8,16 @@
 **Compensación:** Ninguna  
 
 ### 2. Wallet No Existe
-**Detección:** Repository lookup falla  
-**Acción:** `PaymentFailed` (reason: WALLET_NOT_FOUND)  
-**Compensación:** Ninguna (nunca se debitó)  
+**Detección:** CreatePaymentService valida síncronamente (línea 94-96)  
+**Acción:** Retorna `400 Bad Request` con error `WALLET_NOT_FOUND`  
+**Compensación:** Ninguna (el payment nunca se crea)  
 
 ### 3. Fondos Insuficientes
-**Detección:** Balance < amount  
-**Acción:** `PaymentFailed` (reason: INSUFFICIENT_FUNDS)  
-**Compensación:** Ninguna  
+**Detección:** CreatePaymentService valida balance síncronamente  
+**Acción:** Retorna `400 Bad Request` con error `INSUFFICIENT_FUNDS`  
+**Compensación:** Ninguna (el payment nunca se crea)  
+
+**Nota:** Ambos errores se detectan ANTES de guardar el payment en DB y ANTES de publicar eventos.  
 
 ### 4. Gateway Falla
 **Detección:** `ExternalPaymentFailed`  

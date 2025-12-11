@@ -64,18 +64,22 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     actor Cliente
-    participant API as POST /payments
+    participant API as CreatePaymentService
     participant Bus as Event Bus
+    participant PO as PaymentOrchestrator
     
     Cliente->>API: Request payment
+    Note over API: Valida wallet + fondos (SYNC)
+    API->>API: Save Payment (PENDING)
     API->>Bus: PaymentRequested
-    Note over Bus: Valida wallet + debita
-    Bus->>Bus: WalletDebited
-    Bus->>Bus: ExternalPaymentRequested
+    Bus->>PO: Consume event
+    PO->>PO: Debita wallet
+    PO->>Bus: WalletDebited
+    PO->>Bus: ExternalPaymentRequested
     Note over Bus: Gateway procesa (mock: 200ms)
-    Bus->>Bus: ExternalPaymentSucceeded
-    Bus->>API: PaymentCompleted ✅
-    API-->>Cliente: Payment successful
+    Bus->>PO: ExternalPaymentSucceeded
+    PO->>PO: Mark COMPLETED
+    PO->>Bus: PaymentCompleted ✅
 ```
 
 **Con Fallo del Gateway:**
@@ -83,20 +87,24 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Cliente
-    participant API as POST /payments
+    participant API as CreatePaymentService
     participant Bus as Event Bus
-    participant Wallet as WalletService
+    participant PO as PaymentOrchestrator
     
     Cliente->>API: Request payment
+    Note over API: Valida wallet + fondos (SYNC)
+    API->>API: Save Payment (PENDING)
     API->>Bus: PaymentRequested
-    Bus->>Wallet: Debit wallet
-    Wallet-->>Bus: Debited ✅
-    Bus->>Bus: ExternalPaymentRequested
+    Bus->>PO: Consume event
+    PO->>PO: Debita wallet
+    PO->>Bus: ExternalPaymentRequested
     Note over Bus: Gateway falla ❌
-    Bus->>Bus: ExternalPaymentFailed
-    Bus->>Bus: PaymentRefundRequested
-    Bus->>Wallet: Credit wallet (compensación)
-    Wallet-->>Bus: WalletCredited ✅
+    Bus->>PO: ExternalPaymentFailed
+    PO->>PO: Mark FAILED
+    PO->>Bus: PaymentRefundRequested
+    Bus->>PO: Consume refund event
+    PO->>PO: Credita wallet (compensación)
+    PO->>Bus: WalletCredited ✅
 ```
 
 ## Capas

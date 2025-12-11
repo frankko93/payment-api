@@ -77,13 +77,17 @@ graph BT
 
 ```mermaid
 flowchart TD
-    Start([POST /payments]) --> PR[PaymentRequested]
-    PR --> Q1[Queue]
-    Q1 --> PO[PaymentOrchestrator]
-    PO --> Check{¿Saldo suficiente?}
+    Start([POST /payments]) --> CPS[CreatePaymentService]
     
-    Check -->|NO| PF[PaymentFailed ❌]
-    Check -->|SÍ| WD[WalletDebited ✅]
+    CPS --> VW{Validar Wallet<br/>& Fondos<br/>SYNC}
+    VW -->|Falla| Err400[400 Bad Request]
+    VW -->|OK| Save[Save Payment PENDING]
+    
+    Save --> PR[Publish PaymentRequested]
+    PR --> Q1[Queue]
+    
+    Q1 --> PO[PaymentOrchestrator]
+    PO --> WD[Debit Wallet]
     
     WD --> EPR[ExternalPaymentRequested]
     EPR --> GM[Gateway Mock]
@@ -98,8 +102,10 @@ flowchart TD
     PRR --> WC[WalletCredited<br/>Compensación ✅]
     
     style Start fill:#e3f2fd
+    style VW fill:#ffd54f
+    style CPS fill:#42a5f5,color:#fff
     style PC fill:#4caf50,color:#fff
-    style PF fill:#f44336,color:#fff
+    style Err400 fill:#f44336,color:#fff
     style WC fill:#ff9800,color:#fff
     style GM fill:#9c27b0,color:#fff
 ```

@@ -16,12 +16,15 @@ Documentación técnica del sistema de pagos event-driven.
 
 ```mermaid
 flowchart LR
-    A([POST /payments]) --> B[PaymentRequested]
+    A([POST /payments]) --> V{Validate<br/>Wallet}
+    V -->|OK| B[PaymentRequested]
+    V -->|Fail| E[400 Error]
     B --> C[Debit Wallet]
     C --> D[External Gateway]
-    D --> E[PaymentCompleted ✅]
+    D --> F[PaymentCompleted ✅]
     
-    style E fill:#4caf50,color:#fff
+    style F fill:#4caf50,color:#fff
+    style E fill:#f44336,color:#fff
 ```
 
 **Flujo con Fallo:**

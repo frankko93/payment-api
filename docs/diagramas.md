@@ -14,13 +14,13 @@ sequenceDiagram
 
     Cliente->>+API: POST /payments
     API->>API: Check idempotency
+    API->>Wallet: Validate wallet & balance (SYNC)
+    Wallet-->>API: OK
     API->>DB: Save Payment (PENDING)
     API->>SNS: Publish PaymentRequested
     API-->>-Cliente: 202 Accepted
     
     SNS->>+PO: PaymentRequested
-    PO->>Wallet: Validate wallet
-    Wallet-->>PO: OK
     PO->>Wallet: Debit wallet
     Wallet-->>PO: Debited
     PO->>DB: Update Payment (PROCESSING)
@@ -52,6 +52,8 @@ sequenceDiagram
     participant DB as DynamoDB
 
     Cliente->>+API: POST /payments
+    API->>Wallet: Validate wallet & balance (SYNC)
+    Wallet-->>API: OK
     API->>DB: Save Payment (PENDING)
     API->>SNS: Publish PaymentRequested
     API-->>-Cliente: 202 Accepted
