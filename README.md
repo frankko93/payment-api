@@ -4,17 +4,23 @@ Sistema de pagos event-driven construido con Go, arquitectura hexagonal y servic
 
 ## 📋 Tabla de Contenidos
 
-- [Características](#características)
-- [Arquitectura](#arquitectura)
-- [Documentación Completa](#documentación-completa)
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Uso](#uso)
-- [Testing](#testing)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Flujo de Eventos](#flujo-de-eventos)
-- [API Reference](#api-reference)
+- [Características](#-características)
+- [Documentación de Arquitectura](#-documentación-de-arquitectura)
+- [Arquitectura](#️-arquitectura)
+- [Requisitos](#-requisitos)
+- [Instalación](#-instalación)
+- [Configuración](#️-configuración)
+- [Uso](#-uso)
+- [Testing](#-testing)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Flujo de Eventos](#-flujo-de-eventos)
+- [API Reference](#-api-reference)
+- [Comandos Make](#️-comandos-make)
+- [Debugging](#-debugging)
+- [Principios de Diseño](#-principios-de-diseño)
+- [Dead Letter Queue (DLQ)](#-dead-letter-queue-dlq)
+- [Limitaciones Conocidas](#-limitaciones-conocidas)
+- [Posibles Mejoras Futuras](#-posibles-mejoras-futuras)
 
 ## ✨ Características
 
@@ -280,56 +286,89 @@ Los tests de integración validan:
 payment-api/
 ├── cmd/
 │   └── api/
-│       └── main.go                 # Entry point de la aplicación
+│       └── main.go                    # Entry point
 ├── internal/
-│   ├── domain/                     # Capa de dominio
-│   │   ├── event.go               # Interface base de eventos
-│   │   ├── payment.go             # Agregado Payment
-│   │   ├── wallet.go              # Agregado Wallet
-│   │   ├── repositories.go        # Interfaces de repositorios
-│   │   ├── payment_requested_event.go
-│   │   ├── wallet_debited_event.go
-│   │   ├── wallet_credited_event.go
-│   │   ├── external_payment_requested_event.go
-│   │   ├── external_payment_succeeded_event.go
-│   │   ├── external_payment_failed_event.go
-│   │   ├── external_payment_timeout_event.go
-│   │   ├── payment_completed_event.go
-│   │   ├── payment_failed_event.go
-│   │   └── payment_refund_requested_event.go
-│   ├── application/                # Capa de aplicación
-│   │   ├── event_bus.go           # Interfaces EventPublisher/Consumer
-│   │   ├── create_payment_service.go
-│   │   ├── payment_orchestrator.go
-│   │   └── external_gateway_mock.go
-│   ├── infrastructure/             # Capa de infraestructura
-│   │   ├── aws_config.go          # Configuración AWS SDK
-│   │   ├── localstack_setup.go    # Inicialización de recursos
-│   │   ├── dynamodb_payment_repository.go
-│   │   ├── dynamodb_wallet_repository.go
-│   │   ├── dynamodb_idempotency_store.go
-│   │   ├── dynamodb_event_store.go
-│   │   ├── sns_publisher.go       # Implementación de EventPublisher
-│   │   ├── sqs_consumer.go        # Implementación de EventConsumer
-│   │   └── http_handler.go        # HTTP handlers
+│   ├── domain/                        # Capa de dominio
+│   │   ├── payment/
+│   │   │   ├── aggregate.go          # Payment aggregate
+│   │   │   ├── payment_processor.go  # Domain service
+│   │   │   ├── payment_requested_event.go
+│   │   │   ├── payment_completed_event.go
+│   │   │   ├── payment_failed_event.go
+│   │   │   ├── payment_refund_requested_event.go
+│   │   │   ├── external_payment_requested_event.go
+│   │   │   ├── external_payment_succeeded_event.go
+│   │   │   ├── external_payment_failed_event.go
+│   │   │   └── external_payment_timeout_event.go
+│   │   ├── wallet/
+│   │   │   ├── aggregate.go          # Wallet aggregate
+│   │   │   ├── wallet_service.go     # Domain service
+│   │   │   ├── wallet_debited_event.go
+│   │   │   └── wallet_credited_event.go
+│   │   └── shared/
+│   │       ├── event.go              # Event interface
+│   │       ├── repositories.go       # Repository interfaces
+│   │       ├── errors/
+│   │       │   └── errors.go         # Domain errors
+│   │       └── valueobjects/
+│   │           ├── currency.go
+│   │           ├── identifiers.go
+│   │           ├── money.go
+│   │           └── payment_status.go
+│   ├── application/                   # Capa de aplicación
+│   │   ├── command/
+│   │   │   └── create_payment.go     # Create payment use case
+│   │   ├── orchestrator/
+│   │   │   ├── payment_orchestrator.go
+│   │   │   ├── external_gateway_mock.go
+│   │   │   └── event_parser.go
+│   │   └── port/
+│   │       └── event_bus.go          # Port interfaces
+│   ├── infrastructure/                # Capa de infraestructura
+│   │   ├── aws_config.go
+│   │   ├── localstack_setup.go
+│   │   ├── http/
+│   │   │   └── handler.go
+│   │   ├── messaging/
+│   │   │   ├── sns/
+│   │   │   │   └── publisher.go
+│   │   │   └── sqs/
+│   │   │       └── consumer.go
+│   │   └── persistence/
+│   │       └── dynamodb/
+│   │           ├── payment_repository.go
+│   │           ├── wallet_repository.go
+│   │           ├── event_store.go
+│   │           ├── idempotency_store.go
+│   │           └── mappers/
+│   │               ├── payment_mapper.go
+│   │               └── wallet_mapper.go
 │   └── observability/
-│       └── newrelic_mock.go       # Mock de New Relic
+│       └── newrelic_mock.go
 ├── tests/
 │   ├── unit/
-│   │   ├── fakes/                 # Implementaciones fake para tests
-│   │   │   ├── payment_repository_fake.go
-│   │   │   ├── wallet_repository_fake.go
-│   │   │   ├── idempotency_store_fake.go
-│   │   │   ├── event_store_fake.go
-│   │   │   └── event_publisher_fake.go
 │   │   ├── create_payment_test.go
-│   │   └── payment_orchestrator_test.go
+│   │   ├── payment_orchestrator_test.go
+│   │   └── fakes/
+│   │       ├── payment_repository_fake.go
+│   │       ├── wallet_repository_fake.go
+│   │       ├── idempotency_store_fake.go
+│   │       ├── event_store_fake.go
+│   │       └── event_publisher_fake.go
 │   └── integration/
 │       └── payment_flow_test.go
 ├── scripts/
-│   └── seed_data.sh               # Script para seed de datos
-├── docker-compose.yml             # LocalStack setup
-├── Makefile                       # Comandos útiles
+│   ├── init_tables.go                # Inicializa DynamoDB
+│   └── seed_data.sh                  # Seed de datos
+├── docs/                              # Documentación
+│   ├── 01-arquitectura.md
+│   ├── 02-eventos.md
+│   ├── 03-manejo-errores.md
+│   ├── diagramas.md
+│   ├── faq.md
+│   └── README.md
+├── docker-compose.yml
+├── Makefile
 ├── go.mod
 ├── go.sum
 └── README.md
@@ -339,14 +378,15 @@ payment-api/
 
 ### 1. PaymentRequested
 
-Emitido cuando se crea un nuevo pago.
+Emitido cuando se crea un nuevo pago (después de validación síncrona).
 
 **Handler:** `PaymentOrchestrator.HandlePaymentRequested`
 
 **Lógica:**
-- Consulta saldo del wallet
-- Si insuficiente → emite `PaymentFailed`
-- Si OK → debita wallet, emite `WalletDebited` y `ExternalPaymentRequested`
+- Debita wallet
+- Emite `WalletDebited` y `ExternalPaymentRequested`
+
+**Nota:** La validación de wallet y fondos se hace ANTES en `CreatePaymentService` (síncrono).
 
 ### 2. WalletDebited
 
