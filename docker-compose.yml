@@ -1,0 +1,16 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: payment-api-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb,sns,sqs
+      - DEBUG=0
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    driver: bridge
+
