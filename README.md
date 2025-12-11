@@ -40,62 +40,68 @@ Ver carpeta [`/docs`](./docs/) para:
 
 ### Clean Architecture / Hexagonal
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    HTTP API Layer                        │
-│                  (Infrastructure)                        │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              Application Services                        │
-│     (Use Cases & Orchestration Logic)                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                 Domain Layer                             │
-│        (Entities, Events, Interfaces)                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│             Infrastructure Layer                         │
-│   (DynamoDB, SNS, SQS, Event Bus)                       │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph BT
+    subgraph Infra["🔧 Infrastructure Layer<br/>(DynamoDB, SNS, SQS, Event Bus)"]
+        DB[(DynamoDB)]
+        MSG[SNS/SQS]
+        HTTP[HTTP Handler]
+    end
+    
+    subgraph Domain["🎯 Domain Layer<br/>(Entities, Events, Interfaces)"]
+        AGG[Aggregates]
+        EVT[Events]
+        VO[Value Objects]
+    end
+    
+    subgraph App["⚙️ Application Services<br/>(Use Cases & Orchestration Logic)"]
+        UC[Use Cases]
+        ORCH[Orchestrators]
+    end
+    
+    subgraph API["🌐 HTTP API Layer<br/>(Infrastructure)"]
+        REST[REST API]
+    end
+    
+    Infra --> App
+    App --> Domain
+    API --> App
+    
+    style Infra fill:#e8f5e9
+    style Domain fill:#f3e5f5
+    style App fill:#fff3e0
+    style API fill:#e3f2fd
 ```
 
 ### Flujo de Eventos
 
-```
-POST /payments
-     │
-     ▼
-PaymentRequested ──► [Queue] ──► PaymentOrchestrator
-     │                                   │
-     │                                   ▼
-     │                          ¿Saldo suficiente?
-     │                           /              \
-     │                         NO               SÍ
-     │                         │                 │
-     │                         ▼                 ▼
-     │                  PaymentFailed    WalletDebited
-     │                                           │
-     │                                           ▼
-     │                            ExternalPaymentRequested
-     │                                           │
-     │                                    [Gateway Mock]
-     │                                      /        \
-     │                                  Success    Failure
-     │                                    │           │
-     │                                    ▼           ▼
-     │                       ExternalPaymentSucceeded │
-     │                                    │           │
-     │                                    ▼           │
-     │                           PaymentCompleted     │
-     │                                                │
-     │                                                ▼
-     │                                  PaymentRefundRequested
-     │                                                │
-     │                                                ▼
-     │                                         WalletCredited
+```mermaid
+flowchart TD
+    Start([POST /payments]) --> PR[PaymentRequested]
+    PR --> Q1[Queue]
+    Q1 --> PO[PaymentOrchestrator]
+    PO --> Check{¿Saldo suficiente?}
+    
+    Check -->|NO| PF[PaymentFailed ❌]
+    Check -->|SÍ| WD[WalletDebited ✅]
+    
+    WD --> EPR[ExternalPaymentRequested]
+    EPR --> GM[Gateway Mock]
+    GM --> GCheck{Result}
+    
+    GCheck -->|Success| EPS[ExternalPaymentSucceeded]
+    GCheck -->|Failure| EPF[ExternalPaymentFailed]
+    
+    EPS --> PC[PaymentCompleted ✅]
+    
+    EPF --> PRR[PaymentRefundRequested]
+    PRR --> WC[WalletCredited<br/>Compensación ✅]
+    
+    style Start fill:#e3f2fd
+    style PC fill:#4caf50,color:#fff
+    style PF fill:#f44336,color:#fff
+    style WC fill:#ff9800,color:#fff
+    style GM fill:#9c27b0,color:#fff
 ```
 
 ## 📦 Requisitos

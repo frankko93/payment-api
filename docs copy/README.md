@@ -13,40 +13,19 @@ Documentación técnica del sistema de pagos event-driven.
 ## Quick Reference
 
 **Flujo Happy Path:**
-
-```mermaid
-flowchart LR
-    A([POST /payments]) --> B[PaymentRequested]
-    B --> C[Debit Wallet]
-    C --> D[External Gateway]
-    D --> E[PaymentCompleted ✅]
-    
-    style E fill:#4caf50,color:#fff
+```
+POST /payments → PaymentRequested → Debit Wallet → External Gateway → PaymentCompleted ✅
 ```
 
 **Flujo con Fallo:**
-
-```mermaid
-flowchart LR
-    A([POST /payments]) --> B[Debit Wallet]
-    B --> C[Gateway Fails ❌]
-    C --> D[Refund]
-    D --> E[WalletCredited]
-    
-    style C fill:#f44336,color:#fff
-    style E fill:#ff9800,color:#fff
+```
+POST /payments → Debit Wallet → Gateway Fails → Refund → WalletCredited ❌
 ```
 
 **Estados de Payment:**
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING
-    PENDING --> PROCESSING
-    PROCESSING --> COMPLETED
-    PROCESSING --> FAILED
-    COMPLETED --> [*]: ✅
-    FAILED --> [*]: ❌
+```
+PENDING → PROCESSING → COMPLETED ✅
+                    ↘ FAILED ❌
 ```
 
 **Garantías:**

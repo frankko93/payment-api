@@ -19,30 +19,19 @@ Si llega duplicado: retornamos el resultado anterior sin crear payment nuevo.
 ## ¿Qué eventos se emiten?
 
 **Pago exitoso:**
-
-```mermaid
-flowchart TD
-    E1[1. PaymentRequested] --> E2[2. WalletDebited]
-    E2 --> E3[3. ExternalPaymentRequested]
-    E3 --> E4[4. ExternalPaymentSucceeded]
-    E4 --> E5[5. PaymentCompleted ✅]
-    
-    style E5 fill:#4caf50,color:#fff
-```
+1. PaymentRequested
+2. WalletDebited
+3. ExternalPaymentRequested
+4. ExternalPaymentSucceeded
+5. PaymentCompleted
 
 **Pago fallido con refund:**
-
-```mermaid
-flowchart TD
-    E1[1. PaymentRequested] --> E2[2. WalletDebited]
-    E2 --> E3[3. ExternalPaymentRequested]
-    E3 --> E4[4. ExternalPaymentFailed]
-    E4 --> E5[5. PaymentRefundRequested]
-    E5 --> E6[6. WalletCredited ✅]
-    
-    style E4 fill:#f44336,color:#fff
-    style E6 fill:#ff9800,color:#fff
-```
+1. PaymentRequested
+2. WalletDebited
+3. ExternalPaymentRequested
+4. ExternalPaymentFailed
+5. PaymentRefundRequested
+6. WalletCredited
 
 ## ¿Los eventos pueden llegar fuera de orden?
 

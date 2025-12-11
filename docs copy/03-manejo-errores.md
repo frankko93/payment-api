@@ -65,28 +65,11 @@ aws sqs receive-message \
 ## Saga Pattern
 
 **Compensación automática:**
-
-```mermaid
-sequenceDiagram
-    participant PO as PaymentOrchestrator
-    participant Wallet as WalletService
-    participant Gateway as ExternalGateway
-    
-    Note over PO: Payment requested
-    PO->>Wallet: 1. Debit Wallet
-    Wallet-->>PO: ✅ Debited
-    
-    PO->>Gateway: 2. Request External Payment
-    Gateway-->>PO: ✅ Requested
-    
-    Gateway->>Gateway: Process...
-    Gateway-->>PO: ❌ 3. External Payment FAILS
-    
-    Note over PO: Saga Compensation
-    PO->>Wallet: 4. Compensate: Credit Wallet
-    Wallet-->>PO: ✅ Credited (Refund)
-    
-    Note over PO: Payment marked as FAILED
+```
+1. Debit Wallet ✅
+2. Request External Payment ✅
+3. External Payment FAILS ❌
+4. Compensate: Credit Wallet ✅
 ```
 
 El `PaymentOrchestrator` coordina la Saga.
